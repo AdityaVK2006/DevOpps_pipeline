@@ -11,7 +11,12 @@ pipeline {
             steps { checkout scm }
         }
         stage('Build image in Minikube') {
-            steps { sh 'minikube image build -t "$APP_IMAGE" .' }
+            steps {
+                sh '''
+                    docker build -t "$APP_IMAGE" .
+                    minikube image load "$APP_IMAGE"
+                '''
+            }
         }
         stage('Deploy to Minikube') {
             steps {
