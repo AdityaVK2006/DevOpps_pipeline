@@ -1,6 +1,6 @@
 # College DevOps Pipeline Demo
 
-A small end-to-end assignment showing Git collaboration, Jenkins CI/CD, Docker containers, Minikube deployment, and Prometheus/Grafana monitoring. The sample app is a Flask service with a health check and Prometheus metrics endpoint.
+A small end-to-end assignment showing Git collaboration, Jenkins CI/CD, Docker containers, Minikube deployment, and Prometheus/Grafana monitoring. The sample app is a student task manager with assignment tracking, a health check, and a Prometheus metrics endpoint.
 
 ## Pipeline
 
@@ -42,7 +42,7 @@ kubectl get pods,services -n devops-demo
 kubectl port-forward -n devops-demo service/demo-app 5000:5000
 ```
 
-Open `http://localhost:5000/` for the app, `http://localhost:5000/health` for its health check, and `http://localhost:5000/metrics` for metrics.
+Open `http://localhost:5000/` for the task manager. Add assignments with a course, due date, and priority; mark them complete, search/filter your list, or remove them. Tasks are stored in SQLite. Minikube mounts a persistent volume for the database, so task data survives an app pod restart. Also available: `http://localhost:5000/health` for the health check and `http://localhost:5000/metrics` for metrics.
 
 In separate terminals, access the monitoring UIs:
 
@@ -72,6 +72,7 @@ Open a pull request to `main`; a teammate reviews it, then merge it. Configure t
 ## Project files
 
 - `app.py`, `requirements.txt`: Flask app and metrics.
+- `templates/`, `static/`: responsive student task manager UI.
 - `Dockerfile`: container image definition.
 - `Jenkinsfile`: build, deploy, and rollout stages.
 - `k8s/`: namespace, app, Prometheus and Grafana Kubernetes resources.

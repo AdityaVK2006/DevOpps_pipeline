@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f6f2">
+  <title>Studyboard — Student Task Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/"><span class="brand-icon">s<span>.</span></span><span>studyboard</span></a>
+      <div class="side-caption">YOUR SPACE</div>
+      <a class="side-link selected" href="#tasks"><span class="side-symbol">▤</span> My tasks <span class="side-count" id="nav-count">0</span></a>
+      <a class="side-link" href="#tasks" data-shortcut="today"><span class="side-symbol">◷</span> Due soon</a>
+      <div class="side-caption courses-caption">STUDY</div>
+      <div class="course-list" id="course-list"><div class="course-empty">Your courses will show here</div></div>
+      <button class="add-course" id="course-shortcut" type="button"><span>＋</span> Add a task</button>
+      <div class="sidebar-bottom">
+        <div class="study-tip"><span class="tip-spark">✳</span><strong>Small steps add up.</strong><p>Keep your assignments in one place and make time for breaks, too.</p></div>
+        <div class="student-profile"><div class="profile-avatar">S</div><div><strong>Student</strong><small>My study space</small></div><span class="profile-menu">···</span></div>
+      </div>
+    </aside>
+
+    <main class="main" id="tasks">
+      <header class="topbar"><div class="crumb">My workspace <span>/</span> <strong>My tasks</strong></div><div class="top-right"><span class="today-label" id="today-label"></span><span class="top-avatar">S</span></div></header>
+      <div class="page-content">
+        <section class="welcome-row"><div><div class="greeting" id="greeting">YOUR STUDY SPACE</div><h1>Make room for <em>what matters.</em></h1><p class="welcome-copy">A little progress each day adds up to big results.</p></div><div class="welcome-doodle" aria-hidden="true"><span>✳</span><i></i><b></b></div></section>
+
+        <section class="summary-grid" aria-label="Task summary">
+          <article class="summary-card total-card"><div class="summary-top"><span>ON YOUR LIST</span><span class="summary-icon">▤</span></div><div class="summary-number" id="total-count">0</div><div class="summary-note">tasks to keep track of</div><div class="mini-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+          <article class="summary-card due-card"><div class="summary-top"><span>COMING UP</span><span class="summary-icon">◷</span></div><div class="summary-number" id="due-count">0</div><div class="summary-note">due in the next 7 days</div><div class="summary-decoration">↗</div></article>
+          <article class="summary-card done-card"><div class="summary-top"><span>COMPLETED</span><span class="summary-icon">✓</span></div><div class="summary-number" id="done-count">0</div><div class="summary-note" id="done-note">one step at a time</div><div class="progress-track"><span id="progress-bar"></span></div></article>
+        </section>
+
+        <section class="task-section">
+          <div class="section-head"><div><div class="section-label">THE PLAN</div><h2>Your tasks <span class="task-total" id="heading-count">0</span></h2></div><button class="primary-button" id="open-form" type="button"><span>＋</span> Add a task</button></div>
+          <div class="toolbar"><div class="filters" role="group" aria-label="Filter tasks"><button class="filter active" data-filter="all" type="button">All <span id="all-filter-count">0</span></button><button class="filter" data-filter="active" type="button">To do</button><button class="filter" data-filter="completed" type="button">Completed</button></div><label class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Find a task..." aria-label="Find a task"></label></div>
+          <div class="task-list" id="task-list" aria-live="polite"></div>
+        </section>
+        <footer><span><span class="footer-flower">✳</span> You’re doing better than you think.</span><a href="/health">service health <span>↗</span></a></footer>
+      </div>
+    </main>
+  </div>
+
+  <dialog class="task-dialog" id="task-dialog" aria-labelledby="dialog-title">
+    <form id="task-form">
+      <div class="dialog-top"><div><div class="section-label">MAKE A PLAN</div><h2 id="dialog-title">Add a task</h2></div><button class="close-button" id="close-form" type="button" aria-label="Close">×</button></div>
+      <label class="field-label" for="task-title">What do you need to do?</label><input class="text-field" id="task-title" name="title" maxlength="120" placeholder="e.g. Read chapter 4" required>
+      <div class="form-row"><div class="form-field"><label class="field-label" for="task-course">Course <span>optional</span></label><input class="text-field" id="task-course" name="course" maxlength="60" placeholder="e.g. Biology"></div><div class="form-field"><label class="field-label" for="task-due">Due date <span>optional</span></label><input class="text-field" id="task-due" name="due_date" type="date"></div></div>
+      <label class="field-label" for="task-priority">Priority</label><select class="text-field" id="task-priority" name="priority"><option value="low">Low — when you have time</option><option value="medium" selected>Medium — plan for it</option><option value="high">High — focus on this</option></select>
+      <div class="form-error" id="form-error" role="alert"></div><div class="dialog-actions"><button class="cancel-button" id="cancel-form" type="button">Cancel</button><button class="primary-button" type="submit">Save task <span>→</span></button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>
