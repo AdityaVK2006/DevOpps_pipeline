@@ -34,6 +34,7 @@ spec:
       containers:
         - name: prometheus
           image: prom/prometheus:v3.5.0
+          imagePullPolicy: IfNotPresent
           args:
             - --config.file=/etc/prometheus/prometheus.yml
           ports:
@@ -94,6 +95,7 @@ spec:
       containers:
         - name: grafana
           image: grafana/grafana:12.1.1
+          imagePullPolicy: IfNotPresent
           ports:
             - name: web
               containerPort: 3000

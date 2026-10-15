@@ -3,18 +3,21 @@ pipeline {
 
     environment {
         APP_IMAGE = 'devops-demo:latest'
+        PROMETHEUS_IMAGE = 'prom/prometheus:v3.5.0'
+        GRAFANA_IMAGE = 'grafana/grafana:12.1.1'
         K8S_NAMESPACE = 'devops-demo'
     }
 
     stages {
-        stage('Checkout') {
-            steps { checkout scm }
-        }
-        stage('Build image in Minikube') {
+        stage('Build and load images') {
             steps {
                 sh '''
                     docker build -t "$APP_IMAGE" .
+                    docker pull "$PROMETHEUS_IMAGE"
+                    docker pull "$GRAFANA_IMAGE"
                     minikube image load "$APP_IMAGE"
+                    minikube image load "$PROMETHEUS_IMAGE"
+                    minikube image load "$GRAFANA_IMAGE"
                 '''
             }
         }
