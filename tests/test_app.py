@@ -73,6 +73,7 @@ class StudentTaskManagerTests(unittest.TestCase):
         )
         self.assertEqual(completed.status_code, 200)
         self.assertTrue(completed.get_json()["completed"])
+        self.assertTrue(self.client.get("/api/tasks").get_json()[0]["completed"])
 
         deleted = self.client.delete(f"/api/tasks/{task_id}")
         self.assertEqual(deleted.status_code, 204)

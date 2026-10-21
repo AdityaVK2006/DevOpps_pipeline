@@ -17,7 +17,8 @@ def connect_db():
     connection = sqlite3.connect(DATABASE)
     connection.row_factory = sqlite3.Row
     try:
-        yield connection
+        with connection:
+            yield connection
     finally:
         connection.close()
 
