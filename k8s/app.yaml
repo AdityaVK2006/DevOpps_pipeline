@@ -71,7 +71,7 @@ metadata:
   labels:
     app: demo-app
 spec:
-type: NodePort
+  type: NodePort
   selector:
     app: demo-app
   ports:
