@@ -71,9 +71,11 @@ metadata:
   labels:
     app: demo-app
 spec:
+type: NodePort
   selector:
     app: demo-app
   ports:
     - name: http
       port: 5000
       targetPort: http
+      nodePort: 30000
