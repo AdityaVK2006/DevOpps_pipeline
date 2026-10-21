@@ -119,10 +119,15 @@ class TestTaskValidation(BaseTaskTest):
         self.assertEqual(resp.status_code, 400)
 
     def test_invalid_priority_values_rejected(self):
-        for bad in ("urgent", "MEDIUM", "1", "", "none"):
+        for bad in ("urgent", "1", "", "none"):
             with self.subTest(priority=bad):
                 resp = self.make_task(priority=bad)
                 self.assertEqual(resp.status_code, 400)
+
+    def test_priority_is_case_insensitive(self):
+        resp = self.make_task(priority="MEDIUM")
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.get_json()["priority"], "medium")
 
     def test_invalid_due_date_formats_rejected(self):
         for bad in ("01-12-2026", "2026/12/01", "tomorrow", "not-a-date"):
