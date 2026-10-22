@@ -12,7 +12,6 @@ Run in Jenkins (via Jenkinsfile):
         python -m unittest discover -s /tests -v
 """
 
-import json
 import tempfile
 import unittest
 from pathlib import Path

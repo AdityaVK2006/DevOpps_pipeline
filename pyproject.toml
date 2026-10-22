@@ -1,0 +1,38 @@
+# pyproject.toml — project metadata and development-tool configuration
+# Production runtime dependencies remain in requirements.txt (Flask, gunicorn, prometheus-client).
+# This file configures development/CI tools only.
+
+[tool.ruff]
+# Files to lint
+include = ["app.py", "tests/*.py"]
+
+# Target the Python version used in the Dockerfile (python:3.12-slim)
+target-version = "py312"
+
+# Maximum line length – 88 matches Black's default and is a sensible modern choice.
+line-length = 100
+
+[tool.ruff.lint]
+# Rule sets enabled for this Flask application:
+#   E / W  – pycodestyle errors and warnings (PEP 8 basics)
+#   F      – Pyflakes (unused imports, undefined names, etc.)
+#   I      – isort (import ordering)
+#   UP     – pyupgrade (modernise Python syntax)
+#   B      – flake8-bugbear (common bug-prone patterns)
+select = ["E", "W", "F", "I", "UP", "B"]
+
+# Rules that are intentionally ignored for this project:
+#   B008 – Do not perform function calls in default arguments.
+#           Flask route decorators such as @app.get("/") trigger this; it is
+#           intentional in Flask applications.
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+# Keep stdlib, third-party, and local imports grouped.
+known-third-party = ["flask", "prometheus_client"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test files may use broad assertions; relax a few rules there.
+"tests/*.py" = [
+    "E501",  # long lines in test strings are acceptable
+]

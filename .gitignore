@@ -3,3 +3,8 @@ __pycache__/
 .venv/
 .env
 student_tasks.db
+
+# CI/CD generated artefacts – never commit these
+test-reports/
+.lint-venv/
+*.xml

@@ -76,3 +76,169 @@ Open a pull request to `main`; a teammate reviews it, then merge it. Configure t
 - `Dockerfile`: container image definition.
 - `Jenkinsfile`: build, deploy, and rollout stages.
 - `k8s/`: namespace, app, Prometheus and Grafana Kubernetes resources.
+
+---
+
+## Enhanced Jenkins CI/CD Pipeline
+
+> **Contribution by:** feature branch `feature/jenkins-testing-enhancements`
+
+### What the original pipeline did
+
+The original `Jenkinsfile` had four stages:
+
+1. **Build application image** – `docker build` tagged with the Jenkins build number.
+2. **Test application** – ran `python -m unittest discover` inside the built container.
+3. **Load images into Minikube** – pulled Prometheus and Grafana images and loaded all three into Minikube.
+4. **Deploy to Minikube** – applied Kubernetes manifests and waited for rollouts of the app, Prometheus, and Grafana.
+
+### Updated pipeline flow
+
+```
+Git Checkout
+      │
+      ▼
+Code Quality Checks  ← NEW: Ruff linting (fails fast before any build)
+      │
+      ▼
+Build application image
+      │
+      ▼
+Unit Tests & Reporting  ← IMPROVED: JUnit XML report published to Jenkins
+      │
+      ▼
+Load images into Minikube
+      │
+      ▼
+Deploy application  ← split from monitoring for clarity
+      │
+      ▼
+Deploy monitoring components
+      │
+      ▼
+Post-Deployment Smoke Tests  ← NEW: live HTTP checks against deployed app
+      │
+      ▼
+Pipeline Result
+```
+
+### Why the code-quality stage was introduced
+
+Linting catches common bugs and style inconsistencies before the image is built, saving build time. [Ruff](https://docs.astral.sh/ruff/) was chosen because it:
+
+- Is extremely fast (written in Rust).
+- Replaces flake8, isort, and pyupgrade in a single tool.
+- Is configured once in `pyproject.toml` and can be used both locally and in CI without additional infrastructure.
+
+Ruff runs **on the Jenkins agent** (not inside Docker) using an isolated virtual environment created from `requirements-dev.txt`. This keeps production image dependencies clean.
+
+### How automated unit tests are executed
+
+Tests run inside the freshly-built Docker container so the test environment exactly matches the deployed environment:
+
+```sh
+docker run --rm \
+    -v "$WORKSPACE/tests:/tests:ro" \
+    -v "$WORKSPACE/test-reports:/test-reports" \
+    "$APP_IMAGE" \
+    sh -c "pip install --quiet unittest-xml-reporting==3.2.0 && \
+           python -m xmlrunner discover -s /tests -o /test-reports --verbosity 2"
+```
+
+The test suite (`tests/test_app.py`) was expanded from 6 tests to over 35, covering:
+
+| Area | Tests added |
+|---|---|
+| Health & status endpoints | HTTP 200, response body assertions |
+| Task creation (happy path) | All fields, optional fields, whitespace trimming, unique IDs |
+| Task creation (validation) | Empty title, whitespace title, missing title key, bad priority, bad date, oversized fields, non-JSON body |
+| Task listing | Empty DB, count, JSON array type, field presence, ordering |
+| PATCH / completion | Mark complete, mark incomplete, 404, 400 on missing field, 400 on string boolean |
+| DELETE | 204 + no body, 404, only targeted task removed |
+| Data isolation | Failed validation must not create partial tasks |
+| Full lifecycle | Create → list → complete → verify → delete → gone |
+| Metrics | Content, content-type |
+
+### How Jenkins publishes test results
+
+`unittest-xml-reporting` (`xmlrunner`) generates JUnit-compatible XML into the `test-reports/` directory on the workspace. The `junit` step in the `post { always { … } }` block publishes this report through the Jenkins JUnit plugin.
+
+**Required Jenkins plugin:** [JUnit Plugin](https://plugins.jenkins.io/junit/)  
+Install via: *Manage Jenkins → Plugins → Available plugins → search "JUnit"*
+
+After each build, click **Test Results** in the build sidebar to see a breakdown of passing and failing tests.
+
+### What the smoke tests verify
+
+`scripts/smoke_test.sh` runs after the application deployment has passed its rollout check. It:
+
+1. Resolves the Minikube NodePort URL automatically (`minikube ip` + port `30000`).
+2. Waits up to 150 s for the application to become reachable (bounded retry loop, no arbitrary `sleep`).
+3. Asserts the following endpoints:
+
+| Endpoint | Check |
+|---|---|
+| `/health` | HTTP 200, body contains `healthy` |
+| `/api/status` | HTTP 200, body contains `running` and `Student Task Manager` |
+| `/api/tasks` | HTTP 200, body is a JSON array |
+| `/metrics` | HTTP 200, body contains `demo_http_requests_total` |
+| `/` | HTTP 200, body contains `Student Task Manager` |
+
+No destructive requests (POST / PATCH / DELETE) are made. No credentials are logged.
+
+### How failures affect the pipeline
+
+| Failure point | Effect |
+|---|---|
+| Ruff lint error | Pipeline fails in **Code Quality Checks**; image is not built |
+| Unit test failure | Pipeline fails in **Unit Tests & Reporting**; deployment is not attempted |
+| Kubernetes rollout timeout | Pipeline fails in **Deploy application** or **Deploy monitoring** |
+| Smoke test assertion failure | Pipeline fails in **Post-Deployment Smoke Tests**; clear diagnostic printed |
+
+### Running tests locally
+
+**Run the unit tests:**
+
+```sh
+# Install runtime dependencies (if not already installed)
+pip install -r requirements.txt
+
+# Run tests
+python -m unittest discover -s tests -v
+```
+
+**Run Ruff locally:**
+
+```sh
+pip install -r requirements-dev.txt
+ruff check app.py tests/
+```
+
+**Run the smoke tests locally** (requires a running Minikube cluster):
+
+```sh
+# Option 1: let the script resolve Minikube IP automatically
+bash scripts/smoke_test.sh
+
+# Option 2: supply a URL manually (e.g. after a port-forward)
+bash scripts/smoke_test.sh http://localhost:5000
+```
+
+### Troubleshooting common failures
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `ruff: command not found` in Code Quality stage | `requirements-dev.txt` not installed or venv broken | Ensure Python 3 is on the agent PATH; check the venv creation step |
+| `xmlrunner` import error in test stage | The pip install inside the container failed | Verify internet access from Docker; check the container logs |
+| JUnit report not found | `test-reports/*.xml` path mismatch | Ensure `mkdir -p` in the Test stage ran and the container wrote to `/test-reports` |
+| Smoke tests time out | App not reachable via NodePort | Run `kubectl get svc -n devops-demo` and `minikube ip`; verify nodePort 30000 is open |
+| Smoke test 000 HTTP code | `curl` not on PATH in the agent shell | Install `curl` on the Jenkins agent OS |
+| `minikube ip` returns empty | Minikube not started or wrong profile | Run `minikube start` before triggering the build |
+
+### Inspecting test reports
+
+After a pipeline run, open the Jenkins build page and click **Test Results** in the left sidebar. You will see:
+
+- Total tests run / passed / failed / skipped.
+- Per-test pass/fail with error messages and stack traces for failures.
+- Historical trend graph (requires multiple builds).

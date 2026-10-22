@@ -1,8 +1,8 @@
 import os
 import sqlite3
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
-from contextlib import contextmanager
 
 from flask import Flask, Response, jsonify, render_template, request
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest

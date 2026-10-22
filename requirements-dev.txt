@@ -1,0 +1,12 @@
+# Development and CI/CD tool dependencies.
+# These are NOT installed in the production Docker image.
+# They are used by Jenkins (or locally) for code-quality checks and test reporting.
+#
+# Usage:
+#   pip install -r requirements-dev.txt
+
+# Code quality linter
+ruff==0.11.13
+
+# JUnit XML test report generator (used with unittest-xml-reporting)
+unittest-xml-reporting==3.2.0
